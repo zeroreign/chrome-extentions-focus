@@ -1,0 +1,17 @@
+{
+  "manifest_version": 3,
+  "name": "Focus by Game to Life",
+  "description": "Helps you focus on your work by blocking access to distracting websites.",
+  "version": "1.0",
+  "action": {
+    "default_popup": "pages/ContextMenu.html",
+    "default_icon": "./images/focus.png"
+  },
+  "content_scripts": [
+    {
+      "js": ["scripts/content.js"],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  "permissions": ["scripting", "activeTab", "storage", "tabs"]
+}
