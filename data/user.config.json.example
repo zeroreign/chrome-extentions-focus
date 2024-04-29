@@ -1,0 +1,9 @@
+{
+  "distractionHosts": [
+    "example.com",
+    "www.example.com",
+  ],
+  "exemptedHosts": [
+    "localhost"
+  ]
+}

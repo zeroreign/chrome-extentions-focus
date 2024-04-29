@@ -22,10 +22,20 @@ var DistractionSites = {
     );
     return distractionHosts;
   },
-  addHost(host) {
-    const distractionSiteHosts = Distractions.getHosts();
-    distractionSiteHosts.push(host);
-    chrome.storage.sync.set({ distractionSitesHosts: distractionSiteHosts });
+  addHosts: async (hosts) => {
+    const distractionSiteHosts = await DistractionSites.getHosts();
+    distractionSiteHosts.push(hosts);
+    return chrome.storage.sync.set({
+      distractionHosts: distractionSiteHosts.flat(),
+    });
+  },
+  getUserConfiguredHosts: async () => {
+    const fileLocation = await chrome.runtime.getURL(
+      "../data/user.config.json"
+    );
+    const response = await fetch(fileLocation);
+    const { distractionHosts } = await response.json();
+    return distractionHosts;
   },
 };
 
@@ -43,17 +53,15 @@ var FocusMode = {
 };
 
 var Actions = {
-  enableFocusMode(reason) {
-    return new Promise((resolve, reject) => {
-      FocusMode.toggleState(true);
-      FocusMode.setReason(reason);
-    });
+  enableFocusMode: async (reason) => {
+    await FocusMode.toggleState(true);
+    await FocusMode.setReason(reason);
+    Actions.checkUserPriority();
   },
-  disableFocusMode() {
-    return new Promoise((resolve, reject) => {
-      FocusMode.toggleState(false);
-      FocusMode.setReason("");
-    });
+  disableFocusMode: async () => {
+    await FocusMode.toggleState(false);
+    await FocusMode.setReason("");
+    Actions.checkUserPriority();
   },
   toggleFocusMode() {
     const isFocusModeEnabled = FocusMode.getState();
@@ -71,6 +79,7 @@ var Actions = {
     location.replace(redirectUrl);
   },
   checkUserPriority: async (changes, namespace) => {
+    console.log("checkUserPriority changes", changes, namespace);
     const isFocusModeEnabled = await FocusMode.getState();
     if (isFocusModeEnabled) {
       const distractionHosts = await DistractionSites.getHosts();
@@ -84,14 +93,12 @@ var Actions = {
   },
 };
 
-DistractionSites.setDefaultHosts();
-chrome.storage.onChanged.addListener(Actions.checkUserPriority);
+async function setup() {
+  await DistractionSites.setDefaultHosts();
+  const configHosts = await DistractionSites.getUserConfiguredHosts();
+  await DistractionSites.addHosts(configHosts);
 
-const isFocusModeEnabled = chrome.storage.sync.get(
-  "focusMode",
-  Actions.checkUserPriority
-);
-
-if (!isFocusModeEnabled) {
-  Promise.all([Actions.enableFocusMode("Say this outlout: I get to focus on [reason]")]);
+  Actions.enableFocusMode("Say this outlout: I get to focus on [reason]");
 }
+
+setup();
